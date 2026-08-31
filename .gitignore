@@ -1,0 +1,28 @@
+# Sensitive financial data - never commit
+data/
+imports/
+backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+backend/.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
