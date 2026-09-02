@@ -14,6 +14,7 @@ import openpyxl
 
 from app.importers.base import ParsedTransaction
 from app.importers.normalize import (
+    parse_time,
     is_cancelled,
     mask_card_number_if_needed,
     parse_amount,
@@ -63,6 +64,7 @@ class ShinhanCardImporter:
             results.append(
                 ParsedTransaction(
                     transaction_date=parse_date(str(row["거래일"])),
+                    transaction_time=parse_time(row["거래일"]),
                     transaction_type="EXPENSE",
                     amount=parse_amount(row["금액"]),
                     currency="KRW",

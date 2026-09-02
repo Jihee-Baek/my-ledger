@@ -1,7 +1,7 @@
 """Shared parsing helpers used across adapters."""
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 
 _DATE_PATTERNS = [
@@ -28,6 +28,19 @@ def parse_date(raw: str) -> date:
         except ValueError:
             continue
     raise ValueError(f"Unrecognized date format: {raw!r}")
+
+
+_TIME_RE = re.compile(r"\b(\d{1,2}):(\d{2})(?::(\d{2}))?\b")
+
+
+def parse_time(raw) -> time | None:
+    """Extracts HH:MM[:SS] from a string like '21:09:30' or
+    '2026.07.27 18:52'. Returns None when no time is present."""
+    match = _TIME_RE.search(str(raw or ""))
+    if not match:
+        return None
+    h, m, sec = match.groups()
+    return time(int(h), int(m), int(sec or 0))
 
 
 def parse_amount(raw) -> Decimal:

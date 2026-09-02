@@ -8,6 +8,7 @@ import pandas as pd
 
 from app.importers.base import ParsedTransaction
 from app.importers.normalize import (
+    parse_time,
     is_cancelled,
     mask_card_number_if_needed,
     parse_amount,
@@ -41,6 +42,7 @@ class HyundaiCardImporter:
             results.append(
                 ParsedTransaction(
                     transaction_date=parse_date(str(row["승인일"])),
+                    transaction_time=parse_time(row.get("승인시각")),
                     transaction_type="EXPENSE",
                     amount=parse_amount(row["승인금액"]),
                     currency="KRW",

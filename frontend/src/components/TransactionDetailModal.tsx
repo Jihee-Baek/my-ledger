@@ -36,7 +36,12 @@ export function TransactionDetailModal({ transaction, categories, cardLabel, onC
 
         <dl className="mb-5 grid grid-cols-[80px_1fr] gap-y-2 text-sm">
           <dt className="text-gray-500">날짜</dt>
-          <dd>{transaction.transaction_date}</dd>
+          <dd>
+            {transaction.transaction_date}
+            {transaction.transaction_time && (
+              <span className="ml-2 text-gray-500">{transaction.transaction_time.slice(0, 5)}</span>
+            )}
+          </dd>
           <dt className="text-gray-500">금액</dt>
           <dd className="tabular-nums">
             {transaction.transaction_type === 'INCOME' ? '+' : '-'}

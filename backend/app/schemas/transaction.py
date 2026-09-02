@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -9,6 +9,7 @@ class TransactionOut(BaseModel):
 
     id: int
     transaction_date: date
+    transaction_time: time | None
     transaction_type: str
     amount: Decimal
     currency: str

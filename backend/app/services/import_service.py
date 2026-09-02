@@ -98,6 +98,7 @@ def import_file(file_path: Path, db: Session, dry_run: bool = False) -> ImportRe
         transaction = Transaction(
             raw_transaction_id=raw.id,
             transaction_date=parsed.transaction_date,
+            transaction_time=parsed.transaction_time,
             transaction_type=parsed.transaction_type,
             amount=Decimal(parsed.amount),
             currency=parsed.currency,

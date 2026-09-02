@@ -13,6 +13,7 @@ export interface CategoryOut {
 export interface TransactionOut {
   id: number
   transaction_date: string
+  transaction_time: string | null
   transaction_type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   amount: string
   currency: string
