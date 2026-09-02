@@ -11,6 +11,10 @@ export function flattenCategories(tree: CategoryOut[]): FlatCategory[] {
     if (top.children.length === 0) {
       result.push({ id: top.id, label: top.name })
     } else {
+      // A parent with children is itself a valid target (e.g. 규칙이
+      // 세부 분류 없이 상위 '교통'으로 분류하는 경우) - 빼면 규칙
+      // 목록에서 라벨을 못 찾아 raw id가 노출된다.
+      result.push({ id: top.id, label: `${top.name} (전체)` })
       for (const child of top.children) {
         result.push({ id: child.id, label: `${top.name} > ${child.name}` })
       }
