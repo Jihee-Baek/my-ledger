@@ -19,6 +19,7 @@ class TransactionFilters:
     min_amount: Decimal | None = None
     max_amount: Decimal | None = None
     category_id: int | None = None
+    uncategorized: bool = False  # True -> only rows without a category
     card_id: int | None = None
     merchant: str | None = None  # substring match against merchant_raw
     q: str | None = None  # substring match against merchant_raw or description
@@ -40,6 +41,8 @@ def _apply_filters(stmt: Select, filters: TransactionFilters) -> Select:
         stmt = stmt.where(Transaction.amount <= filters.max_amount)
     if filters.category_id is not None:
         stmt = stmt.where(Transaction.category_id == filters.category_id)
+    if filters.uncategorized:
+        stmt = stmt.where(Transaction.category_id.is_(None))
     if filters.card_id is not None:
         stmt = stmt.where(Transaction.card_id == filters.card_id)
     if filters.merchant:

@@ -43,7 +43,8 @@ export function Transactions() {
         end_date: endDate || undefined,
         min_amount: minAmount ? Number(minAmount) : undefined,
         max_amount: maxAmount ? Number(maxAmount) : undefined,
-        category_id: categoryId ? Number(categoryId) : undefined,
+        category_id: categoryId && categoryId !== '__none__' ? Number(categoryId) : undefined,
+        uncategorized: categoryId === '__none__' ? true : undefined,
         card_id: cardId ? Number(cardId) : undefined,
         transaction_type: transactionType || undefined,
         q: q || undefined,
@@ -104,6 +105,7 @@ export function Transactions() {
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <select className="rounded-md border border-gray-300 px-2 py-1" value={categoryId} onChange={(e) => resetPage(setCategoryId)(e.target.value)}>
             <option value="">카테고리 전체</option>
+            <option value="__none__">미분류만</option>
             {flatCategories.map((c) => (
               <option key={c.id} value={c.id}>{c.label}</option>
             ))}

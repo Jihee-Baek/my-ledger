@@ -73,6 +73,7 @@ export const endpoints = {
     min_amount?: number
     max_amount?: number
     category_id?: number
+    uncategorized?: boolean
     card_id?: number
     merchant?: string
     q?: string
