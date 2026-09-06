@@ -152,7 +152,9 @@ class GimpoPayImporter:
                             amount=amount,
                             merchant_raw="김포페이 지원금",
                             source_transaction_id=f"{approval}-{abs(hash(label)) % 10_000}",
-                            description=f"{short} 지원금으로 결제된 금액 ({merchant})",
+                            # 가맹점명은 넣지 않는다 - description도 규칙 매칭 대상이라 '학원' 같은
+                            # 가맹점 키워드에 걸려 지원금 수입이 지출 카테고리로 분류된다 (raw_row에 있음)
+                            description=f"{short} 지원금으로 결제된 금액",
                         )
                     )
                 continue
