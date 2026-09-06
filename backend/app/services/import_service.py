@@ -1,4 +1,4 @@
-"""CSV/Excel import pipeline:
+"""CSV/Excel/PDF import pipeline:
 
     file -> Adapter.parse() -> raw_transactions (verbatim) -> normalize
     -> dedupe by fingerprint -> transactions
@@ -93,7 +93,9 @@ def import_file(file_path: Path, db: Session, dry_run: bool = False) -> ImportRe
         db.add(raw)
         db.flush()
 
-        card = get_or_create_card(db, owner, parsed.card_institution, parsed.card_number_masked)
+        card = get_or_create_card(
+            db, owner, parsed.card_institution, parsed.card_number_masked, parsed.card_type
+        )
 
         transaction = Transaction(
             raw_transaction_id=raw.id,

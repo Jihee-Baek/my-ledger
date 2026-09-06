@@ -20,7 +20,9 @@ def get_or_create_default_owner(db: Session) -> Owner:
     return owner
 
 
-def get_or_create_card(db: Session, owner: Owner, institution: str, card_number_masked: str) -> Card:
+def get_or_create_card(
+    db: Session, owner: Owner, institution: str, card_number_masked: str, card_type: str = "CREDIT"
+) -> Card:
     card = (
         db.query(Card)
         .filter_by(institution=institution, card_number_masked=card_number_masked)
@@ -32,7 +34,7 @@ def get_or_create_card(db: Session, owner: Owner, institution: str, card_number_
         owner_id=owner.id,
         institution=institution,
         card_number_masked=card_number_masked,
-        card_type="CREDIT",
+        card_type=card_type,
     )
     db.add(card)
     db.flush()

@@ -64,12 +64,12 @@ export function Import() {
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-6 py-10 text-gray-500 hover:border-gray-400 hover:bg-gray-50">
             <span className="text-3xl">📄</span>
-            <span>{file ? file.name : '카드사 다운로드 파일을 선택하세요 (xlsx / xls)'}</span>
+            <span>{file ? file.name : '카드사·은행 다운로드 파일을 선택하세요 (xlsx / xls / pdf)'}</span>
             <span className="rounded-md bg-gray-900 px-4 py-1.5 text-sm text-white">파일 선택</span>
             <input
               ref={inputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls,.csv,.pdf"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0]

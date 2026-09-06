@@ -28,6 +28,11 @@ def classify_transaction(db: Session, transaction: Transaction) -> bool:
     merchant = get_or_create_merchant(db, transaction.merchant_raw)
     transaction.merchant_id = merchant.id
 
+    if transaction.transaction_type == "TRANSFER":
+        # 이체는 수입/지출이 아닌 자금 이동이므로 카테고리를 붙이지 않는다. 규칙을 적용하면
+        # '카드대금 결제' 같은 이체가 카드사 이름으로 가맹점 학습까지 오염시킨다.
+        return False
+
     if merchant.default_category_id is not None:
         transaction.category_id = merchant.default_category_id
         return True

@@ -23,6 +23,7 @@ class ParsedTransaction:
     merchant_raw: str
     card_institution: str
     card_number_masked: str
+    card_type: str = "CREDIT"  # CREDIT / CHECK / BANK(입출금 계좌)
     transaction_time: time | None = None  # None when the export has no time
     source_transaction_id: str | None = None
     description: str | None = None

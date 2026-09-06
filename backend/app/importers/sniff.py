@@ -22,3 +22,9 @@ def is_html(file_path: Path) -> bool:
         head = f.read(200_000)
     lowered = head.lower()
     return b"<html" in lowered or b"<table" in lowered
+
+
+def is_pdf(file_path: Path) -> bool:
+    with file_path.open("rb") as f:
+        head = f.read(5)
+    return head == b"%PDF-"
