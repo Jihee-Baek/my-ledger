@@ -39,6 +39,9 @@ _CHECK_CARD_KINDS = {"체크카드"}
 _TRANSFER_KINDS = {"해지"}  # 예적금 해지 입금 - 자기 자산 이동
 # 카드사가 상대방인 입출금은 방향과 무관하게 카드 명세서와 같은 돈이다: 출금은 카드대금,
 # 입금은 카드 취소/환불 정산으로 카드 내역에 이미 (취소 건으로) 반영되어 있다.
+# 선불/지역화폐 충전: 통장에서 나간 돈은 잔액으로 옮겨진 것이고 실제 소비는 해당 서비스의
+# 사용 내역을 따로 import해서 잡는다 (카드대금과 같은 구조).
+_PREPAID_CHARGE_COUNTERPARTIES = {"김포페이"}
 _CARD_COMPANIES = {"삼성카드", "신한카드", "현대카드", "현대카드(주)", "신한체크교통", "롯데카드", "KB국민카드", "우리카드", "하나카드", "BC카드"}
 
 
@@ -145,6 +148,8 @@ class ShinhanBankImporter:
 
         if kind in _CARD_SETTLEMENT_KINDS:
             return "TRANSFER", False, f"{kind} - 카드대금 결제 (카드 내역에 개별 거래로 이미 반영)", merchant
+        if withdrawal > 0 and any(name in counterparty for name in _PREPAID_CHARGE_COUNTERPARTIES):
+            return "TRANSFER", False, f"{kind} - {counterparty} 충전 (사용 내역을 별도 import하여 반영)", merchant
         if counterparty in _CARD_COMPANIES:
             what = "카드대금 결제" if withdrawal > 0 else "카드 취소/환불 정산"
             return "TRANSFER", False, f"{kind} - {what} (카드 내역에 이미 반영)", merchant
