@@ -15,6 +15,7 @@ import type {
   RecurringExpenseItem,
   SpendingAnomalies,
   TransactionListOut,
+  TransactionSummaryOut,
   TransactionUpdate,
 } from './types'
 
@@ -85,6 +86,21 @@ export const endpoints = {
     limit?: number
     offset?: number
   }) => api.get<TransactionListOut>('/transactions', params),
+
+  transactionSummary: (params: {
+    start_date?: string
+    end_date?: string
+    min_amount?: number
+    max_amount?: number
+    category_id?: number
+    uncategorized?: boolean
+    card_id?: number
+    merchant?: string
+    q?: string
+    transaction_type?: string
+    currency?: string
+    include_excluded?: boolean
+  }) => api.get<TransactionSummaryOut>('/transactions/summary', params),
 
   updateTransaction: (id: number, body: TransactionUpdate) => api.patch(`/transactions/${id}`, body),
 

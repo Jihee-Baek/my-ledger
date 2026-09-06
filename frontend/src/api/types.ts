@@ -49,6 +49,21 @@ export interface CardOut {
   is_active: boolean
 }
 
+export interface TransactionSummaryOut {
+  currency: string
+  count: number
+  expense_count: number
+  income_count: number
+  transfer_count: number
+  total_expense: string
+  total_income: string
+  total_transfer: string
+  period_expense_total: string
+  expense_share_pct: number | null
+  breakdown_kind: 'parent' | 'child' | 'merchant'
+  breakdown: CategoryAmount[]
+}
+
 export interface CategoryAmount {
   category: string
   amount: string

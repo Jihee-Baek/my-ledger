@@ -10,6 +10,15 @@
 - Python 3.12 (Homebrew: `brew install python@3.12`)
 - SQLite (macOS 기본 제공)
 
+## 빠른 실행 / 종료
+
+```bash
+./start.sh   # venv·node_modules 자동 설치 → DB 마이그레이션 → 프론트 빌드(변경 시) → 백엔드 실행 → 브라우저 열기
+./stop.sh    # 백엔드 종료
+```
+
+백엔드 PID/로그는 `.run/`에 저장됩니다 (`.run/uvicorn.log`).
+
 ## 셋업
 
 ```bash
@@ -48,7 +57,12 @@ cd backend
 ```
 
 같은 파일을 다시 돌려도 이미 저장된 거래는 건너뜁니다(fingerprint 기반 중복 방지).
-현재 지원: 삼성카드(국내/해외), 신한카드(카드이용내역조회 통합), 현대카드(국내).
+현재 지원: 삼성카드(국내/해외), 신한카드(카드이용내역조회 통합), 신한체크 대중교통 이용내역, 현대카드(국내),
+신한은행 거래내역조회 PDF.
+
+신한은행 PDF는 카드 내역과 겹치는 돈의 흐름을 이중 계산하지 않도록 처리합니다: 카드대금 결제(FB카드/FB자동/카드결제)와
+본인 계좌 간 이체·예적금 해지·1원 인증은 `TRANSFER`로, 체크카드 출금은 신한카드 내역과 중복이므로 `is_excluded`로
+저장되어 통계에서 빠집니다. 나머지 출금은 지출, 입금은 수입(`수입` 카테고리)으로 들어갑니다.
 
 ## 카테고리 분류 (Rule-based)
 
@@ -80,6 +94,8 @@ cd backend
 
 ```text
 GET   /transactions              (필터: start_date, end_date, category_id, card_id, merchant, q, currency 등)
+GET   /transactions/summary      (목록과 같은 필터 → 지출/수입/이체 합계, 기간 전체 지출 대비 비중,
+                                  선택 카테고리 한 단계 아래 기준의 비중 breakdown; currency 기본 KRW)
 GET   /transactions/{id}
 PATCH /transactions/{id}         (category_id/memo 수정 - category_id 지정 시 해당 가맹점 학습에도 반영)
 GET   /categories                (트리 구조)
@@ -127,7 +143,7 @@ npm run build
 `dist`가 없으면 `/`, `/transactions` 등은 그냥 API 404가 되므로, 개발 중에는 `npm run dev`로
 :5173에 접속하세요.
 
-화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리 수정),
+화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리 수정 + 현재 필터의 합계/비중 패널),
 카테고리(트리 + Rule 관리), 예산, 가져오기(파일 업로드 → 미리보기 → 실행).
 
 계산은 전부 백엔드가 수행하고 Frontend는 결과를 시각화만 합니다 - 금액을 JS에서 재계산하지 않습니다.

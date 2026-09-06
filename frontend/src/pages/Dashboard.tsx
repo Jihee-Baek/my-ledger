@@ -7,18 +7,12 @@ import { RecentTransactions } from '../components/RecentTransactions'
 import { StatCard } from '../components/StatCard'
 import { TrendChart } from '../components/TrendChart'
 import { useApiQuery } from '../hooks/useApiQuery'
-import { formatAmount, formatPercent, toNumber } from '../lib/format'
+import { formatAmount, formatPercent, monthRange, toNumber } from '../lib/format'
 
 function prevMonth(year: number, month: number): [number, number] {
   return month === 1 ? [year - 1, 12] : [year, month - 1]
 }
 
-function monthRange(year: number, month: number): [string, string] {
-  const start = `${year}-${String(month).padStart(2, '0')}-01`
-  const lastDay = new Date(year, month, 0).getDate()
-  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-  return [start, end]
-}
 
 export function Dashboard() {
   const today = new Date()

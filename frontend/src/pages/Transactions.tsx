@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { endpoints } from '../api/endpoints'
 import type { TransactionOut } from '../api/types'
+import { CategoryBarList } from '../components/CategoryBarList'
+import { MonthNav } from '../components/MonthNav'
+import { StatCard } from '../components/StatCard'
 import { TransactionDetailModal } from '../components/TransactionDetailModal'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { categoryNameMap, flattenCategories } from '../lib/categoryTree'
-import { formatAmount, formatDate } from '../lib/format'
+import { amountSign, formatAmount, formatDate, isTransfer, monthRange } from '../lib/format'
 
 const PAGE_SIZE = 30
 
@@ -13,8 +16,36 @@ export function Transactions() {
   const [searchParams] = useSearchParams()
   const highlightId = searchParams.get('highlight')
 
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  // 기본은 '이번 달' (대시보드와 동일). 대시보드 최근 거래에서 넘어오면 그 거래의 달로 연다.
+  const initialMonth = (() => {
+    const p = searchParams.get('month') // YYYY-MM
+    const m = p && /^\d{4}-\d{2}$/.test(p) ? p.split('-').map(Number) : null
+    const today = new Date()
+    return m ? { year: m[0], month: m[1] } : { year: today.getFullYear(), month: today.getMonth() + 1 }
+  })()
+  const [year, setYear] = useState(initialMonth.year)
+  const [month, setMonth] = useState(initialMonth.month)
+  const [initialStart, initialEnd] = monthRange(initialMonth.year, initialMonth.month)
+  const [startDate, setStartDate] = useState(initialStart)
+  const [endDate, setEndDate] = useState(initialEnd)
+
+  const [monthStart, monthEnd] = monthRange(year, month)
+  const isWholeMonth = startDate === monthStart && endDate === monthEnd
+  const isAllTime = startDate === '' && endDate === ''
+
+  const goMonth = (y: number, m: number) => {
+    const [s, e] = monthRange(y, m)
+    setYear(y)
+    setMonth(m)
+    setStartDate(s)
+    setEndDate(e)
+    setPage(0)
+  }
+  const clearRange = () => {
+    setStartDate('')
+    setEndDate('')
+    setPage(0)
+  }
   const [minAmount, setMinAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -56,6 +87,27 @@ export function Transactions() {
     [startDate, endDate, minAmount, maxAmount, categoryId, cardId, transactionType, q, sortBy, sortDir, page],
   )
 
+  // 목록과 같은 필터 조건의 합계/비중 (정렬·페이지는 무관). 금액 계산은 전부 백엔드가 한다.
+  const summary = useApiQuery(
+    () =>
+      endpoints.transactionSummary({
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+        min_amount: minAmount ? Number(minAmount) : undefined,
+        max_amount: maxAmount ? Number(maxAmount) : undefined,
+        category_id: categoryId && categoryId !== '__none__' ? Number(categoryId) : undefined,
+        uncategorized: categoryId === '__none__' ? true : undefined,
+        card_id: cardId ? Number(cardId) : undefined,
+        transaction_type: transactionType || undefined,
+        q: q || undefined,
+      }),
+    [startDate, endDate, minAmount, maxAmount, categoryId, cardId, transactionType, q],
+  )
+
+  const selectedCategoryLabel = categoryId && categoryId !== '__none__'
+    ? flatCategories.find((c) => String(c.id) === categoryId)?.label ?? '선택 카테고리'
+    : categoryId === '__none__' ? '미분류' : null
+
   const openTransaction = async (tx: TransactionOut) => {
     setSelected(tx)
   }
@@ -87,7 +139,21 @@ export function Transactions() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">거래내역</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">거래내역</h1>
+        <div className="flex items-center gap-3">
+          <MonthNav year={year} month={month} onChange={goMonth} />
+          {!isWholeMonth && (
+            <span className="text-xs text-gray-400">{isAllTime ? '전체 기간 표시 중' : '기간 직접 지정 중'}</span>
+          )}
+          <button
+            onClick={isAllTime ? () => goMonth(year, month) : clearRange}
+            className="rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            {isAllTime ? '이 달만' : '전체 기간'}
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -135,6 +201,45 @@ export function Transactions() {
         </div>
       </div>
 
+      {summary.data && (
+        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              label={`지출 합계${selectedCategoryLabel ? ` · ${selectedCategoryLabel}` : ''}`}
+              value={formatAmount(summary.data.total_expense, summary.data.currency)}
+              sub={`${summary.data.expense_count}건 · ${summary.data.currency} 기준`}
+            />
+            <StatCard
+              label="기간 전체 지출 대비"
+              value={summary.data.expense_share_pct === null ? '-' : `${summary.data.expense_share_pct.toFixed(1)}%`}
+              sub={`전체 ${formatAmount(summary.data.period_expense_total, summary.data.currency)} 중`}
+            />
+            <StatCard
+              label="수입 합계"
+              value={formatAmount(summary.data.total_income, summary.data.currency)}
+              tone={Number(summary.data.total_income) > 0 ? 'positive' : 'default'}
+              sub={`${summary.data.income_count}건`}
+            />
+            <StatCard
+              label="이체 (통계 미포함)"
+              value={formatAmount(summary.data.total_transfer, summary.data.currency)}
+              sub={`${summary.data.transfer_count}건`}
+            />
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-3 flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">
+                {summary.data.breakdown_kind === 'parent' && '카테고리별 지출 비중'}
+                {summary.data.breakdown_kind === 'child' && `${selectedCategoryLabel ?? ''} 하위 카테고리별 비중`}
+                {summary.data.breakdown_kind === 'merchant' && `${selectedCategoryLabel ?? ''} 가맹점별 비중 (상위 10)`}
+              </h2>
+              <span className="text-xs text-gray-400">비중은 위 지출 합계 대비</span>
+            </div>
+            <CategoryBarList items={summary.data.breakdown} emptyMessage="조건에 맞는 지출이 없습니다." />
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="w-full text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-left text-gray-500">
@@ -156,13 +261,16 @@ export function Transactions() {
                 <td className="px-4 py-2 text-gray-500">{formatDate(tx.transaction_date)}</td>
                 <td className="px-4 py-2 font-medium text-gray-800">
                   {tx.merchant_raw ?? '(알 수 없음)'}
-                  {tx.is_excluded && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600">취소</span>}
+                  {tx.is_excluded && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600">통계 제외</span>}
+                  {isTransfer(tx.transaction_type) && <span className="ml-2 rounded bg-sky-50 px-1.5 py-0.5 text-xs text-sky-600">이체</span>}
                 </td>
-                <td className="px-4 py-2 text-right tabular-nums">
-                  {tx.transaction_type === 'INCOME' ? '+' : '-'}
+                <td className={`px-4 py-2 text-right tabular-nums ${isTransfer(tx.transaction_type) ? 'text-gray-400' : ''}`}>
+                  {amountSign(tx.transaction_type)}
                   {formatAmount(tx.amount, tx.currency)}
                 </td>
-                <td className="px-4 py-2 text-gray-600">{tx.category_id ? catNameById.get(tx.category_id) ?? '-' : '미분류'}</td>
+                <td className="px-4 py-2 text-gray-600">
+                  {tx.category_id ? catNameById.get(tx.category_id) ?? '-' : isTransfer(tx.transaction_type) ? <span className="text-gray-400">이체 (분류 불필요)</span> : '미분류'}
+                </td>
                 <td className="px-4 py-2 text-gray-600">{tx.card_id ? cardLabelById.get(tx.card_id) ?? '-' : '-'}</td>
               </tr>
             ))}

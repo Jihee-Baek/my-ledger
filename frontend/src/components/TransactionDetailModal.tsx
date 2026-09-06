@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { TransactionOut } from '../api/types'
 import type { FlatCategory } from '../lib/categoryTree'
-import { formatAmount } from '../lib/format'
+import { amountSign, formatAmount, isTransfer } from '../lib/format'
 
 interface Props {
   transaction: TransactionOut
@@ -44,7 +44,7 @@ export function TransactionDetailModal({ transaction, categories, cardLabel, onC
           </dd>
           <dt className="text-gray-500">금액</dt>
           <dd className="tabular-nums">
-            {transaction.transaction_type === 'INCOME' ? '+' : '-'}
+            {amountSign(transaction.transaction_type)}
             {formatAmount(transaction.amount, transaction.currency)}
           </dd>
           <dt className="text-gray-500">결제수단</dt>
@@ -52,7 +52,13 @@ export function TransactionDetailModal({ transaction, categories, cardLabel, onC
           {transaction.is_excluded && (
             <>
               <dt className="text-gray-500">상태</dt>
-              <dd className="text-amber-600">취소된 거래 (통계에서 제외)</dd>
+              <dd className="text-amber-600">통계에서 제외된 거래 (취소 또는 다른 내역과 중복)</dd>
+            </>
+          )}
+          {isTransfer(transaction.transaction_type) && (
+            <>
+              <dt className="text-gray-500">상태</dt>
+              <dd className="text-sky-600">이체 - 자금 이동이라 수입/지출 통계에 포함되지 않음</dd>
             </>
           )}
         </dl>

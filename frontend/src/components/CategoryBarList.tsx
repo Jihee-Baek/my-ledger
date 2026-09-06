@@ -1,9 +1,15 @@
 import { formatAmount } from '../lib/format'
 import type { CategoryAmount } from '../api/types'
 
-export function CategoryBarList({ items }: { items: CategoryAmount[] }) {
+export function CategoryBarList({
+  items,
+  emptyMessage = '이번 달 지출 내역이 없습니다.',
+}: {
+  items: CategoryAmount[]
+  emptyMessage?: string
+}) {
   if (items.length === 0) {
-    return <div className="py-6 text-center text-sm text-gray-400">이번 달 지출 내역이 없습니다.</div>
+    return <div className="py-6 text-center text-sm text-gray-400">{emptyMessage}</div>
   }
 
   return (
