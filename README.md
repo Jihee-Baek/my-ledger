@@ -58,7 +58,13 @@ cd backend
 
 같은 파일을 다시 돌려도 이미 저장된 거래는 건너뜁니다(fingerprint 기반 중복 방지).
 현재 지원: 삼성카드(국내/해외), 신한카드(카드이용내역조회 통합), 신한체크 대중교통 이용내역, 현대카드(국내),
-신한은행 거래내역조회 PDF.
+신한은행 거래내역조회 PDF, 수동 전사 CSV(앱 캡처·종이 명세서만 있는 은행용, 예: 기업은행).
+
+수동 전사 CSV는 첫 줄이 `# my-ledger manual bank statement v1` 이고 `# institution:` 헤더와
+`date,time,counterparty,amount,balance,type,memo` 컬럼을 가집니다 (amount는 부호 있는 금액, type은
+EXPENSE/INCOME/TRANSFER 또는 빈칸). `balance`를 적어 두면 임포터가 시간순으로 잔액 흐름을 다시 계산해
+한 글자라도 틀리면 파일을 거부하므로, 손으로 옮긴 내역도 믿고 쓸 수 있습니다. 형식 상세는
+`backend/app/importers/manual_csv.py` 상단 주석 참고.
 
 신한은행 PDF는 카드 내역과 겹치는 돈의 흐름을 이중 계산하지 않도록 처리합니다: 카드대금 결제(FB카드/FB자동/카드결제)와
 본인 계좌 간 이체·예적금 해지·1원 인증·선불/지역화폐 충전(김포페이)은 `TRANSFER`로, 체크카드 출금은 신한카드 내역과 중복이므로 `is_excluded`로
