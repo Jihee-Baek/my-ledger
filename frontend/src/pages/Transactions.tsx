@@ -16,9 +16,14 @@ export function Transactions() {
   const [searchParams] = useSearchParams()
   const highlightId = searchParams.get('highlight')
 
-  // 기본은 '이번 달' (대시보드와 동일). 대시보드 최근 거래에서 넘어오면 그 거래의 달로 연다.
+  // 기본은 '이번 달' (대시보드와 동일). 대시보드 최근 거래에서 넘어오면 그 거래의 달로 열고,
+  // 통계 탭에서 넘어오면 start/end 기간과 category/type 필터를 그대로 이어받는다.
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/
+  const paramStart = searchParams.get('start')
+  const paramEnd = searchParams.get('end')
+  const hasRange = !!(paramStart && paramEnd && isoDate.test(paramStart) && isoDate.test(paramEnd))
   const initialMonth = (() => {
-    const p = searchParams.get('month') // YYYY-MM
+    const p = searchParams.get('month') ?? (hasRange ? paramStart!.slice(0, 7) : null) // YYYY-MM
     const m = p && /^\d{4}-\d{2}$/.test(p) ? p.split('-').map(Number) : null
     const today = new Date()
     return m ? { year: m[0], month: m[1] } : { year: today.getFullYear(), month: today.getMonth() + 1 }
@@ -26,8 +31,8 @@ export function Transactions() {
   const [year, setYear] = useState(initialMonth.year)
   const [month, setMonth] = useState(initialMonth.month)
   const [initialStart, initialEnd] = monthRange(initialMonth.year, initialMonth.month)
-  const [startDate, setStartDate] = useState(initialStart)
-  const [endDate, setEndDate] = useState(initialEnd)
+  const [startDate, setStartDate] = useState(hasRange ? paramStart! : initialStart)
+  const [endDate, setEndDate] = useState(hasRange ? paramEnd! : initialEnd)
 
   const [monthStart, monthEnd] = monthRange(year, month)
   const isWholeMonth = startDate === monthStart && endDate === monthEnd
@@ -48,9 +53,16 @@ export function Transactions() {
   }
   const [minAmount, setMinAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+  const [categoryId, setCategoryId] = useState(() => {
+    const c = searchParams.get('category')
+    if (c === 'none') return '__none__'
+    return c && /^\d+$/.test(c) ? c : ''
+  })
   const [cardId, setCardId] = useState('')
-  const [transactionType, setTransactionType] = useState('')
+  const [transactionType, setTransactionType] = useState(() => {
+    const t = searchParams.get('type')
+    return t && ['EXPENSE', 'INCOME', 'TRANSFER'].includes(t) ? t : ''
+  })
   const [q, setQ] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')

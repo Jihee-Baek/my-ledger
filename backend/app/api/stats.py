@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.schemas.summary import (
+    BreakdownOut,
     BudgetSet,
     BudgetStatusItem,
     CategorySummaryItem,
@@ -27,6 +30,24 @@ def summary_monthly(year: int, month: int, currency: str = "KRW", db: Session = 
 def summary_category(year: int, month: int, currency: str = "KRW", db: Session = Depends(get_db)):
     start, end = stats_service.month_bounds(year, month)
     return stats_service.category_summary(db, start, end, currency)
+
+
+@router.get("/summary/breakdown", response_model=BreakdownOut)
+def summary_breakdown(
+    start_date: date,
+    end_date: date,
+    transaction_type: str = "EXPENSE",
+    parent_id: int | None = None,
+    currency: str = "KRW",
+    db: Session = Depends(get_db),
+):
+    """통계 탭용 카테고리 비중 (기간 임의, 수입/지출 선택, 상위 -> 하위 드릴다운)."""
+    if start_date > end_date:
+        raise HTTPException(status_code=422, detail="start_date must be <= end_date")
+    try:
+        return stats_service.type_breakdown(db, start_date, end_date, transaction_type, parent_id, currency)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @router.get("/summary/merchant", response_model=list[MerchantSummaryItem])

@@ -515,3 +515,94 @@ def spending_anomalies(
         },
         "categories": flagged,
     }
+
+
+def type_breakdown(
+    db: Session,
+    start: date,
+    end: date,
+    transaction_type: str,
+    parent_id: int | None = None,
+    currency: str = "KRW",
+) -> dict:
+    """통계 탭: 기간 안의 INCOME 또는 EXPENSE 를 카테고리별로 나눈 비중.
+
+    parent_id 가 없으면 상위 카테고리 단위로 묶고(하위에 분류된 거래는 상위로
+    합산), 있으면 그 상위의 하위 카테고리 단위로 묶는다. 상위에 직접 분류된
+    거래는 "<상위> (직접 분류)" 로 따로 보여 준다. 분류 없는 거래는 "미분류".
+    수입/지출 총액은 토글 UI 가 두 값을 함께 보여 줘야 해서 늘 같이 돌려준다.
+    이체(TRANSFER)와 is_excluded 는 어느 쪽에도 넣지 않는다."""
+    if transaction_type not in ("INCOME", "EXPENSE"):
+        raise ValueError("transaction_type must be INCOME or EXPENSE")
+
+    def total_for(tx_type: str) -> Decimal:
+        stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.transaction_date >= start,
+            Transaction.transaction_date <= end,
+            Transaction.is_excluded.is_(False),
+            Transaction.transaction_type == tx_type,
+            Transaction.currency == currency,
+        )
+        return Decimal(db.scalar(stmt) or 0)
+
+    categories = {c.id: c for c in db.query(Category).all()}
+    parent = categories.get(parent_id) if parent_id is not None else None
+    if parent_id is not None and parent is None:
+        raise ValueError(f"category {parent_id} not found")
+
+    stmt = (
+        select(
+            Transaction.category_id,
+            func.sum(Transaction.amount).label("amount"),
+            func.count(Transaction.id).label("count"),
+        )
+        .where(
+            Transaction.transaction_date >= start,
+            Transaction.transaction_date <= end,
+            Transaction.is_excluded.is_(False),
+            Transaction.transaction_type == transaction_type,
+            Transaction.currency == currency,
+        )
+        .group_by(Transaction.category_id)
+    )
+    if parent is not None:
+        subtree = select(Category.id).where(
+            (Category.id == parent.id) | (Category.parent_id == parent.id)
+        )
+        stmt = stmt.where(Transaction.category_id.in_(subtree))
+
+    # bucket key -> (category_id for drill-down, label, amount, count)
+    buckets: dict[str, dict] = {}
+    for category_id, amount, count in db.execute(stmt).all():
+        category = categories.get(category_id) if category_id else None
+        if category is None:
+            key, cid, label = "__none__", None, "미분류"
+        elif parent is None:
+            top = categories.get(category.parent_id) if category.parent_id else category
+            key, cid, label = f"top:{top.id}", top.id, top.name
+        elif category.id == parent.id:
+            key, cid, label = f"self:{parent.id}", parent.id, f"{parent.name} (직접 분류)"
+        else:
+            key, cid, label = f"cat:{category.id}", category.id, category.name
+        b = buckets.setdefault(key, {"category_id": cid, "category": label, "amount": Decimal(0), "count": 0})
+        b["amount"] += Decimal(str(amount or 0))
+        b["count"] += int(count)
+
+    total = sum((b["amount"] for b in buckets.values()), Decimal(0))
+    items = sorted(buckets.values(), key=lambda b: b["amount"], reverse=True)
+    for b in items:
+        b["percentage"] = round(float(b["amount"]) / float(total) * 100, 1) if total else 0.0
+
+    return {
+        "start_date": start,
+        "end_date": end,
+        "currency": currency,
+        "transaction_type": transaction_type,
+        "total_income": total_for("INCOME"),
+        "total_expense": total_for("EXPENSE"),
+        "parent_id": parent.id if parent else None,
+        "parent_name": parent.name if parent else None,
+        "total": total,
+        "count": sum(b["count"] for b in items),
+        "items": items,
+    }

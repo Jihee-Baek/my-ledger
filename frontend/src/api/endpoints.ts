@@ -1,5 +1,6 @@
 import { api } from './client'
 import type {
+  BreakdownOut,
   BudgetStatusItem,
   CardOut,
   CategoryOut,
@@ -25,6 +26,14 @@ export const endpoints = {
 
   categorySummary: (year: number, month: number, currency = 'KRW') =>
     api.get<CategorySummaryItem[]>('/summary/category', { year, month, currency }),
+
+  breakdown: (params: {
+    start_date: string
+    end_date: string
+    transaction_type: 'INCOME' | 'EXPENSE'
+    parent_id?: number | null
+    currency?: string
+  }) => api.get<BreakdownOut>('/summary/breakdown', params),
 
   merchantSummary: (year: number, month: number, limit = 10, currency = 'KRW') =>
     api.get<MerchantSummaryItem[]>('/summary/merchant', { year, month, limit, currency }),

@@ -4,6 +4,7 @@ import { Budget } from './pages/Budget'
 import { Categories } from './pages/Categories'
 import { Dashboard } from './pages/Dashboard'
 import { Import } from './pages/Import'
+import { Stats } from './pages/Stats'
 import { Transactions } from './pages/Transactions'
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="transactions" element={<Transactions />} />
+        <Route path="stats" element={<Stats />} />
         <Route path="categories" element={<Categories />} />
         <Route path="budget" element={<Budget />} />
         <Route path="import" element={<Import />} />

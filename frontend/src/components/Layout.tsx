@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/transactions', label: '거래내역' },
+  { to: '/stats', label: '통계' },
   { to: '/categories', label: '카테고리' },
   { to: '/budget', label: '예산' },
   { to: '/import', label: '가져오기' },

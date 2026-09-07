@@ -193,3 +193,25 @@ export interface ImportResultOut {
   classified: number
   unclassified: number
 }
+
+export interface BreakdownItem {
+  category_id: number | null
+  category: string
+  amount: string
+  count: number
+  percentage: number
+}
+
+export interface BreakdownOut {
+  start_date: string
+  end_date: string
+  currency: string
+  transaction_type: 'INCOME' | 'EXPENSE'
+  total_income: string
+  total_expense: string
+  parent_id: number | null
+  parent_name: string | null
+  total: string
+  count: number
+  items: BreakdownItem[]
+}

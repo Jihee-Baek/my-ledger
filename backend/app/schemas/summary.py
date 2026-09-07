@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -100,3 +101,28 @@ class BudgetSet(BaseModel):
     month: int
     amount: Decimal
     category_id: int | None = None  # None = 전체(월 총) 예산
+
+
+class BreakdownItem(BaseModel):
+    category_id: int | None
+    category: str
+    amount: Decimal
+    count: int
+    percentage: float
+
+
+class BreakdownOut(BaseModel):
+    """통계 화면용: 기간 내 수입/지출 총액과, 선택한 유형의 카테고리별 비중.
+    parent_id 없음 -> 상위 카테고리별(하위는 상위로 합산), 있음 -> 그 하위별."""
+
+    start_date: date
+    end_date: date
+    currency: str
+    transaction_type: str
+    total_income: Decimal
+    total_expense: Decimal
+    parent_id: int | None
+    parent_name: str | None
+    total: Decimal
+    count: int
+    items: list[BreakdownItem]

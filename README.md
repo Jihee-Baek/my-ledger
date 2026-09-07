@@ -58,7 +58,7 @@ cd backend
 
 같은 파일을 다시 돌려도 이미 저장된 거래는 건너뜁니다(fingerprint 기반 중복 방지).
 현재 지원: 삼성카드(국내/해외), 신한카드(카드이용내역조회 통합), 신한체크 대중교통 이용내역, 현대카드(국내),
-신한은행 거래내역조회 PDF, 김포페이(지역화폐) 거래내역서 xlsx, 수동 전사 CSV(앱 캡처·종이 명세서만 있는 은행용, 예: 기업은행).
+신한은행 거래내역조회 PDF, 김포페이(지역화폐) 거래내역서 xlsx, 수동 전사 CSV(앱 캡처·종이 명세서만 있는 은행용, 예: 기업은행·하나은행).
 
 김포페이는 결제를 거래금액(가맹점 가격) 기준 지출로, 충전은 이체(은행 출금과 대응)로 넣고, 충전 시 붙는 할인형
 인센티브와 결제에 쓰인 기후행동기회소득·걷기챌린지 지원금은 `수입 > 환급/정산`으로 잡습니다.
@@ -153,7 +153,12 @@ npm run build
 :5173에 접속하세요.
 
 화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리 수정 + 현재 필터의 합계/비중 패널),
+통계(월간/연간 기간 이동, 수입·지출 토글, 카테고리 비중 도넛 + 목록, 상위 → 하위 → 거래내역 드릴다운; 상태는 URL 쿼리에 저장),
 카테고리(트리 + Rule 관리), 예산, 가져오기(파일 업로드 → 미리보기 → 실행).
+
+통계 화면의 집계는 `GET /api/summary/breakdown?start_date&end_date&transaction_type=EXPENSE|INCOME[&parent_id]` 하나가 담당합니다.
+`parent_id` 없이 부르면 상위 카테고리 단위(하위 분류는 상위로 합산), 주면 그 하위 단위로 묶고, 수입·지출 총액은 항상 함께 돌려줍니다.
+이체와 `is_excluded` 거래는 어느 쪽에도 들어가지 않습니다. 도넛 색은 금액 순위별 고정 7색이고 8번째부터는 회색 '그 외'로 접습니다.
 
 계산은 전부 백엔드가 수행하고 Frontend는 결과를 시각화만 합니다 - 금액을 JS에서 재계산하지 않습니다.
 
@@ -232,7 +237,7 @@ my-ledger/
 │   ├── src/
 │   │   ├── api/             # fetch client, endpoint 함수, 타입
 │   │   ├── components/      # 재사용 UI 컴포넌트
-│   │   ├── pages/           # Dashboard/Transactions/Categories/Budget/Import
+│   │   ├── pages/           # Dashboard/Transactions/Stats/Categories/Budget/Import
 │   │   ├── hooks/           # useApiQuery 등
 │   │   └── lib/             # 포맷팅 등 (계산 없음)
 │   └── dist/                # npm run build 결과 (git 제외, 백엔드가 서빙)
