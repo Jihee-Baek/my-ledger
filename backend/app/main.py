@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import cards, categories, category_rules, imports, stats, transactions
+from app.api import cards, categories, category_rules, fixed_expenses, imports, stats, transactions
 
 app = FastAPI(
     title="my-ledger API",
@@ -17,6 +17,7 @@ app.include_router(category_rules.router, prefix="/api")
 app.include_router(cards.router, prefix="/api")
 app.include_router(imports.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
+app.include_router(fixed_expenses.router, prefix="/api")
 
 
 @app.get("/health", tags=["health"])

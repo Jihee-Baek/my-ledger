@@ -1,9 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', end: true },
+  { to: '/', label: '홈', end: true },
   { to: '/transactions', label: '거래내역' },
   { to: '/income', label: '수입' },
+  { to: '/fixed', label: '고정 지출' },
   { to: '/stats', label: '통계' },
   { to: '/categories', label: '카테고리' },
   { to: '/budget', label: '예산' },

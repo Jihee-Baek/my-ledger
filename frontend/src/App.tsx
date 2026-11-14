@@ -3,6 +3,7 @@ import { Layout } from './components/Layout'
 import { Budget } from './pages/Budget'
 import { Categories } from './pages/Categories'
 import { Dashboard } from './pages/Dashboard'
+import { FixedExpenses } from './pages/FixedExpenses'
 import { Import } from './pages/Import'
 import { Income } from './pages/Income'
 import { Stats } from './pages/Stats'
@@ -15,6 +16,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="income" element={<Income />} />
+        <Route path="fixed" element={<FixedExpenses />} />
         <Route path="stats" element={<Stats />} />
         <Route path="categories" element={<Categories />} />
         <Route path="budget" element={<Budget />} />

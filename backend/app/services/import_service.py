@@ -9,6 +9,7 @@ Usage:
 
 import json
 import sys
+from types import SimpleNamespace
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -19,8 +20,9 @@ from app.classifiers.rule_classifier import classify_transaction
 from app.core.db import SessionLocal
 from app.importers import REGISTRY, ParsedTransaction
 from app.importers.normalize import mark_cancelled_pairs
-from app.models import ImportBatch, RawTransaction, Transaction
+from app.models import FixedExpense, ImportBatch, RawTransaction, Transaction
 from app.services.direction import infer_direction
+from app.services.fixed_expense_service import _matches as fixed_expense_matches
 from app.services.fingerprint import build_fingerprint
 from app.services.reference_data import get_or_create_card, get_or_create_default_owner
 
@@ -52,6 +54,19 @@ def _find_importer(file_path: Path):
 
 def _row_to_json(row: dict) -> str:
     return json.dumps(row, ensure_ascii=False, default=str)
+
+
+def _apply_fixed_expense_override(db: Session, parsed: ParsedTransaction, card_id: int, direction: str) -> str:
+    """임포터가 TRANSFER로 판정한 출금이라도 고정 지출로 등록된 항목(키워드·결제수단·금액 일치)이면
+    EXPENSE로 들여온다. 예: 본인 이름 통장으로 가는 모임회비 자동이체는 이름만 보면 본인 이체지만
+    사용자가 고정 지출에 올려 둔 실제 지출이다. 등록이 명시적이라 일반 본인 이체는 건드리지 않는다."""
+    if parsed.transaction_type != "TRANSFER" or direction != "OUT" or not parsed.merchant_raw:
+        return parsed.transaction_type
+    probe = SimpleNamespace(merchant_raw=parsed.merchant_raw, card_id=card_id, amount=parsed.amount)
+    for item in db.query(FixedExpense).filter_by(is_active=True).all():
+        if fixed_expense_matches(item, probe):
+            return "EXPENSE"
+    return parsed.transaction_type
 
 
 def import_file(file_path: Path, db: Session, dry_run: bool = False) -> ImportResult:
@@ -98,12 +113,15 @@ def import_file(file_path: Path, db: Session, dry_run: bool = False) -> ImportRe
             db, owner, parsed.card_institution, parsed.card_number_masked, parsed.card_type
         )
 
+        direction = infer_direction(importer.source, parsed.transaction_type, parsed.raw_row)
+        transaction_type = _apply_fixed_expense_override(db, parsed, card.id, direction)
+
         transaction = Transaction(
             raw_transaction_id=raw.id,
             transaction_date=parsed.transaction_date,
             transaction_time=parsed.transaction_time,
-            transaction_type=parsed.transaction_type,
-            direction=infer_direction(importer.source, parsed.transaction_type, parsed.raw_row),
+            transaction_type=transaction_type,
+            direction=direction,
             amount=Decimal(parsed.amount),
             currency=parsed.currency,
             merchant_raw=parsed.merchant_raw,

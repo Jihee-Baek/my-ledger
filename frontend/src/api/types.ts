@@ -47,6 +47,7 @@ export interface TransactionUpdate {
 export interface CardOut {
   id: number
   institution: string
+  card_name: string | null
   card_number_masked: string | null
   card_type: string | null
   is_active: boolean
@@ -217,4 +218,70 @@ export interface BreakdownOut {
   total: string
   count: number
   items: BreakdownItem[]
+}
+
+export interface MonthAmount {
+  month: string // YYYY-MM
+  amount: string
+  count: number
+}
+
+export type FixedExpenseStatus = 'paid' | 'upcoming' | 'unconfirmed' | 'missing'
+
+export interface FixedExpenseRow {
+  id: number
+  name: string
+  keyword: string
+  amount_filter: string | null
+  card_id: number | null
+  card_label: string | null
+  category: string | null
+  category_group: string
+  memo: string | null
+  pay_day: number | null
+  latest_amount: string
+  average_amount: string
+  months_paid: number
+  last_paid_date: string | null
+  selected_month_amount: string
+  status: FixedExpenseStatus
+  monthly: MonthAmount[]
+}
+
+export interface FixedExpenseCandidate {
+  name: string
+  keyword: string
+  card_id: number | null
+  card_label: string | null
+  amount_filter: string | null
+  category_id: number | null
+  category: string | null
+  pay_day: number
+  months_seen: number
+  typical_amount: string
+  last_amount: string
+}
+
+export interface FixedExpenseOverview {
+  year: number
+  month: number
+  months: string[]
+  items: FixedExpenseRow[]
+  monthly_totals: MonthAmount[]
+  expected_monthly_total: string
+  selected_paid_total: string
+  selected_remaining_total: string
+  paid_count: number
+  item_count: number
+  group_totals: { group: string; amount: string; percentage: number }[]
+  candidates: FixedExpenseCandidate[]
+}
+
+export interface FixedExpenseCreate {
+  name: string
+  keyword: string
+  card_id?: number | null
+  amount?: number | string | null
+  category_id?: number | null
+  memo?: string | null
 }

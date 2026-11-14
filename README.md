@@ -77,6 +77,14 @@ EXPENSE/INCOME/TRANSFER 또는 빈칸). `balance`를 적어 두면 임포터가 
 원본 행에서 읽어 저장하며(`app/services/direction.py`), 이 값 덕분에 화면에서 수입<->이체, 지출<->이체 전환을
 허용하면서도 입금을 지출로 바꾸는 식의 잘못된 전환은 막습니다.
 
+## 고정 지출
+
+`fixed_expenses` 테이블에 항목을 등록하면, 지출 거래 중 가맹점명(공백 정리)에 `keyword`가 들어가고
+`card_id`/`amount`가 지정된 경우 그것까지 일치하는 거래를 그 항목으로 묶습니다. `amount`는 같은 이름으로
+두 건 이상 나가는 경우(예: DB손해보험 계약 두 건)를 가르는 용도이고, 조건이 많은 항목이 먼저 거래를 가져갑니다.
+후보 추천은 최근 6개월 중 3개월 이상, 한 달 한 번꼴로 금액이 거의 일정한(변동계수 0.35 이하) 지출이며
+식비·쇼핑·여행·문화/여가는 제외합니다. 계산은 `app/services/fixed_expense_service.py`가 전부 합니다.
+
 ## 카테고리 분류 (Rule-based)
 
 ```bash
@@ -125,7 +133,13 @@ POST  /budget                    ({"year":,"month":,"amount":,"category_id":})
 GET   /summary/trend?months=6    (최근 N개월 수입/지출 추이)
 GET   /anomalies?year=&month=&lookback_months=3&min_change_pct=30  (평소 대비 급증/신규 지출 탐지)
 
-GET   /cards                     (결제수단 목록)
+GET   /cards                     (결제수단 목록 - card_name 별칭 포함)
+PATCH /cards/{id}                ({"card_name":} 별칭 변경; 화면의 결제수단 칸에 그대로 쓰임)
+
+GET    /fixed-expenses/overview?year=&month=   (고정 지출 항목별 최근 6개월 납부 현황 + 등록 후보)
+POST   /fixed-expenses           ({"name":,"keyword":,"card_id":,"amount":,"category_id":,"memo":})
+PATCH  /fixed-expenses/{id}
+DELETE /fixed-expenses/{id}      (항목만 지움 - 거래내역은 그대로)
 
 GET    /category-rules
 POST   /category-rules           ({"keyword":,"category_id":,"priority":,"match_type":,"enabled":})
@@ -158,10 +172,14 @@ npm run build
 `dist`가 없으면 `/`, `/transactions` 등은 그냥 API 404가 되므로, 개발 중에는 `npm run dev`로
 :5173에 접속하세요.
 
-화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리/구분 수정 + 현재 필터의 합계/비중 패널),
+화면: 홈(월별 요약/추이/상위 카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리/구분 수정 + 현재 필터의 합계/비중 패널),
 수입(월별 입금 전체 - 수입 합계·이체로 처리된 입금·수입 하위 카테고리 비중, 행마다 수입/이체 즉시 전환),
+고정 지출(등록 항목별 최근 6개월 납부표·결제일·이번 달 납부 상태·월 합계, 반복 지출 후보 추천과 추가/삭제),
 통계(월간/연간 기간 이동, 수입·지출 토글, 카테고리 비중 도넛 + 목록, 상위 → 하위 → 거래내역 드릴다운; 상태는 URL 쿼리에 저장),
-카테고리(트리 + Rule 관리), 예산, 가져오기(파일 업로드 → 미리보기 → 실행).
+카테고리(트리 + Rule 관리·검색), 예산, 가져오기(파일 업로드 → 미리보기 → 실행 + 결제수단 별칭 편집).
+
+카테고리 집계는 모든 화면이 상위 분류 기준(식비 > 외식은 식비로 합산)으로 같습니다. `/summary/monthly`의
+`top_categories`와 `/anomalies`도 같은 기준입니다.
 
 통계 화면의 집계는 `GET /api/summary/breakdown?start_date&end_date&transaction_type=EXPENSE|INCOME[&parent_id]` 하나가 담당합니다.
 `parent_id` 없이 부르면 상위 카테고리 단위(하위 분류는 상위로 합산), 주면 그 하위 단위로 묶고, 수입·지출 총액은 항상 함께 돌려줍니다.

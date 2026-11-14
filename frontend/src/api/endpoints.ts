@@ -8,6 +8,8 @@ import type {
   CategoryRuleOut,
   CategoryRuleUpdate,
   CategorySummaryItem,
+  FixedExpenseCreate,
+  FixedExpenseOverview,
   ImportResultOut,
   MerchantSummaryItem,
   MonthComparisonItem,
@@ -118,11 +120,17 @@ export const endpoints = {
   categories: () => api.get<CategoryOut[]>('/categories'),
 
   cards: () => api.get<CardOut[]>('/cards'),
+  updateCard: (id: number, cardName: string) => api.patch<CardOut>(`/cards/${id}`, { card_name: cardName }),
 
   categoryRules: () => api.get<CategoryRuleOut[]>('/category-rules'),
   createCategoryRule: (body: CategoryRuleCreate) => api.post<CategoryRuleOut>('/category-rules', body),
   updateCategoryRule: (id: number, body: CategoryRuleUpdate) => api.patch<CategoryRuleOut>(`/category-rules/${id}`, body),
   deleteCategoryRule: (id: number) => api.delete<void>(`/category-rules/${id}`),
+
+  fixedExpenseOverview: (year: number, month: number) =>
+    api.get<FixedExpenseOverview>('/fixed-expenses/overview', { year, month }),
+  createFixedExpense: (body: FixedExpenseCreate) => api.post('/fixed-expenses', body),
+  deleteFixedExpense: (id: number) => api.delete<void>(`/fixed-expenses/${id}`),
 
   importFile: (file: File, preview: boolean) => api.upload<ImportResultOut>('/import', file, { preview }),
 }

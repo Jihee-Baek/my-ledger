@@ -5,6 +5,7 @@ from app.models.account import Account
 from app.models.card import Card
 from app.models.category import Category
 from app.models.category_rule import CategoryRule
+from app.models.fixed_expense import FixedExpense
 from app.models.import_batch import ImportBatch
 from app.models.merchant import Merchant
 from app.models.monthly_budget import MonthlyBudget
@@ -17,6 +18,7 @@ __all__ = [
     "Card",
     "Category",
     "CategoryRule",
+    "FixedExpense",
     "ImportBatch",
     "Merchant",
     "MonthlyBudget",
