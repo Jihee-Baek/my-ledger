@@ -31,11 +31,12 @@ _EXPECTED_HEADER = ["거래일자", "거래시간", "적요", "출금(원)", "�
 _DATE_RE = re.compile(r"^\d{8}$")
 _ACCOUNT_LIKE_RE = re.compile(r"^(\d{3}-\d{3,}|\d{10,})$")  # e.g. 304-1003 / 230368233284 (계좌번호)
 _LEADING_CODE_RE = re.compile(r"^\d+\.")  # 자동이체 내용의 '020.' 같은 순번 접두어
-_ACCOUNT_NO_RE = re.compile(r"\[신한\]\s*(\d{6,})")
+_ACCOUNT_NO_RE = re.compile(r"\[신한\]\s*(\d[\d-]{5,}\d)")  # 110406974... 또는 110-276-406974
 _NAME_RE = re.compile(r"성명\s*(\S+)")
 
-_CARD_SETTLEMENT_KINDS = {"FB카드", "FB자동", "카드결제"}
-_CHECK_CARD_KINDS = {"체크카드"}
+# 2026-11 양식부터 적요가 3글자로 잘려 나온다 (카드결제 -> 카드결, 체크카드 -> 신한체)
+_CARD_SETTLEMENT_KINDS = {"FB카드", "FB자동", "카드결제", "카드결"}
+_CHECK_CARD_KINDS = {"체크카드", "신한체"}
 _TRANSFER_KINDS = {"해지"}  # 예적금 해지 입금 - 자기 자산 이동
 # 카드사가 상대방인 입출금은 방향과 무관하게 카드 명세서와 같은 돈이다: 출금은 카드대금,
 # 입금은 카드 취소/환불 정산으로 카드 내역에 이미 (취소 건으로) 반영되어 있다.
@@ -79,7 +80,7 @@ class ShinhanBankImporter:
         with pdfplumber.open(file_path) as pdf:
             first_text = pdf.pages[0].extract_text() or ""
             if m := _ACCOUNT_NO_RE.search(first_text):
-                account_masked = _mask_account(m.group(1))
+                account_masked = _mask_account(m.group(1).replace("-", ""))
             if m := _NAME_RE.search(first_text):
                 owner_name = m.group(1).strip()
 
