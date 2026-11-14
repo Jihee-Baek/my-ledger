@@ -43,6 +43,19 @@ export function amountSign(transactionType: string): string {
   return '-'
 }
 
+/** 바꿀 수 있는 거래 구분 - 들어온 돈은 수입/이체, 나간 돈은 지출/이체 */
+export function typeOptionsFor(direction: 'IN' | 'OUT'): { value: 'INCOME' | 'EXPENSE' | 'TRANSFER'; label: string }[] {
+  return direction === 'IN'
+    ? [
+        { value: 'INCOME', label: '수입' },
+        { value: 'TRANSFER', label: '이체' },
+      ]
+    : [
+        { value: 'EXPENSE', label: '지출' },
+        { value: 'TRANSFER', label: '이체' },
+      ]
+}
+
 export function isTransfer(transactionType: string): boolean {
   return transactionType === 'TRANSFER'
 }

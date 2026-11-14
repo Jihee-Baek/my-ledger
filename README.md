@@ -73,6 +73,10 @@ EXPENSE/INCOME/TRANSFER 또는 빈칸). `balance`를 적어 두면 임포터가 
 본인 계좌 간 이체·예적금 해지·1원 인증·선불/지역화폐 충전(김포페이)은 `TRANSFER`로, 체크카드 출금은 신한카드 내역과 중복이므로 `is_excluded`로
 저장되어 통계에서 빠집니다. 나머지 출금은 지출, 입금은 수입(`수입` 카테고리)으로 들어갑니다.
 
+모든 거래는 `direction`(IN 입금 / OUT 출금)을 가집니다. 이체는 타입만으로 방향을 알 수 없어서 import 시
+원본 행에서 읽어 저장하며(`app/services/direction.py`), 이 값 덕분에 화면에서 수입<->이체, 지출<->이체 전환을
+허용하면서도 입금을 지출로 바꾸는 식의 잘못된 전환은 막습니다.
+
 ## 카테고리 분류 (Rule-based)
 
 ```bash
@@ -102,11 +106,13 @@ cd backend
 주요 엔드포인트:
 
 ```text
-GET   /transactions              (필터: start_date, end_date, category_id, card_id, merchant, q, currency 등)
+GET   /transactions              (필터: start_date, end_date, category_id, card_id, merchant, q, currency,
+                                  direction=IN|OUT(입금/출금) 등)
 GET   /transactions/summary      (목록과 같은 필터 → 지출/수입/이체 합계, 기간 전체 지출 대비 비중,
                                   선택 카테고리 한 단계 아래 기준의 비중 breakdown; currency 기본 KRW)
 GET   /transactions/{id}
-PATCH /transactions/{id}         (category_id/memo 수정 - category_id 지정 시 해당 가맹점 학습에도 반영)
+PATCH /transactions/{id}         (category_id/memo 수정 - category_id 지정 시 해당 가맹점 학습에도 반영;
+                                  transaction_type 으로 입금은 INCOME<->TRANSFER, 출금은 EXPENSE<->TRANSFER 전환)
 GET   /categories                (트리 구조)
 
 GET   /summary/monthly?year=&month=&currency=KRW
@@ -152,7 +158,8 @@ npm run build
 `dist`가 없으면 `/`, `/transactions` 등은 그냥 API 404가 되므로, 개발 중에는 `npm run dev`로
 :5173에 접속하세요.
 
-화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리 수정 + 현재 필터의 합계/비중 패널),
+화면: Dashboard(월별 요약/추이/카테고리별 지출/최근 거래), 거래내역(검색·필터·정렬·카테고리/구분 수정 + 현재 필터의 합계/비중 패널),
+수입(월별 입금 전체 - 수입 합계·이체로 처리된 입금·수입 하위 카테고리 비중, 행마다 수입/이체 즉시 전환),
 통계(월간/연간 기간 이동, 수입·지출 토글, 카테고리 비중 도넛 + 목록, 상위 → 하위 → 거래내역 드릴다운; 상태는 URL 쿼리에 저장),
 카테고리(트리 + Rule 관리), 예산, 가져오기(파일 업로드 → 미리보기 → 실행).
 

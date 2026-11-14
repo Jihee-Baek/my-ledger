@@ -31,6 +31,8 @@ class Transaction(Base):
     # 승인시각. 원본 export에 시각이 없는 경우(월 합산 대중교통 등)는 NULL.
     transaction_time: Mapped[time | None] = mapped_column(Time)
     transaction_type: Mapped[str] = mapped_column(String(10), nullable=False)  # INCOME/EXPENSE/TRANSFER
+    # IN(입금) / OUT(출금). 이체는 타입만으로 방향을 알 수 없어 따로 저장 - app/services/direction.py
+    direction: Mapped[str] = mapped_column(String(3), nullable=False, server_default="OUT")
     # Numeric, not int: overseas transactions are recorded in their original
     # currency (e.g. USD) with cents, not whole KRW won.
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)

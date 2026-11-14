@@ -88,6 +88,7 @@ export const endpoints = {
     merchant?: string
     q?: string
     transaction_type?: string
+    direction?: 'IN' | 'OUT'
     currency?: string
     include_excluded?: boolean
     sort_by?: 'date' | 'amount'
@@ -107,6 +108,7 @@ export const endpoints = {
     merchant?: string
     q?: string
     transaction_type?: string
+    direction?: 'IN' | 'OUT'
     currency?: string
     include_excluded?: boolean
   }) => api.get<TransactionSummaryOut>('/transactions/summary', params),

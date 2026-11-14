@@ -20,6 +20,7 @@ from app.core.db import SessionLocal
 from app.importers import REGISTRY, ParsedTransaction
 from app.importers.normalize import mark_cancelled_pairs
 from app.models import ImportBatch, RawTransaction, Transaction
+from app.services.direction import infer_direction
 from app.services.fingerprint import build_fingerprint
 from app.services.reference_data import get_or_create_card, get_or_create_default_owner
 
@@ -102,6 +103,7 @@ def import_file(file_path: Path, db: Session, dry_run: bool = False) -> ImportRe
             transaction_date=parsed.transaction_date,
             transaction_time=parsed.transaction_time,
             transaction_type=parsed.transaction_type,
+            direction=infer_direction(importer.source, parsed.transaction_type, parsed.raw_row),
             amount=Decimal(parsed.amount),
             currency=parsed.currency,
             merchant_raw=parsed.merchant_raw,

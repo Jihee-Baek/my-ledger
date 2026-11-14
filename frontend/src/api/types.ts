@@ -15,6 +15,7 @@ export interface TransactionOut {
   transaction_date: string
   transaction_time: string | null
   transaction_type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  direction: 'IN' | 'OUT' // 입금 / 출금 - 이체도 방향이 있다
   amount: string
   currency: string
   merchant_raw: string | null
@@ -39,6 +40,8 @@ export interface TransactionListOut {
 export interface TransactionUpdate {
   category_id?: number | null
   memo?: string | null
+  /** 입금은 INCOME <-> TRANSFER, 출금은 EXPENSE <-> TRANSFER 로만 변경 가능 */
+  transaction_type?: 'INCOME' | 'EXPENSE' | 'TRANSFER'
 }
 
 export interface CardOut {

@@ -24,6 +24,7 @@ class TransactionFilters:
     merchant: str | None = None  # substring match against merchant_raw
     q: str | None = None  # substring match against merchant_raw or description
     transaction_type: str | None = None
+    direction: str | None = None  # IN(입금) / OUT(출금)
     currency: str | None = None
     include_excluded: bool = False
     sort_by: str = "date"  # "date" | "amount"
@@ -62,6 +63,8 @@ def _apply_filters(stmt: Select, filters: TransactionFilters) -> Select:
         )
     if filters.transaction_type is not None:
         stmt = stmt.where(Transaction.transaction_type == filters.transaction_type)
+    if filters.direction is not None:
+        stmt = stmt.where(Transaction.direction == filters.direction)
     if filters.currency is not None:
         stmt = stmt.where(Transaction.currency == filters.currency)
     if not filters.include_excluded:

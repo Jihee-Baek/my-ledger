@@ -29,6 +29,7 @@ def list_transactions(
     merchant: str | None = None,
     q: str | None = None,
     transaction_type: str | None = None,
+    direction: str | None = Query(default=None, pattern="^(IN|OUT)$"),
     currency: str | None = None,
     include_excluded: bool = False,
     sort_by: str = Query(default="date", pattern="^(date|amount)$"),
@@ -48,6 +49,7 @@ def list_transactions(
         merchant=merchant,
         q=q,
         transaction_type=transaction_type,
+        direction=direction,
         currency=currency,
         include_excluded=include_excluded,
         sort_by=sort_by,
@@ -69,6 +71,7 @@ def summarize_transactions(
     merchant: str | None = None,
     q: str | None = None,
     transaction_type: str | None = None,
+    direction: str | None = Query(default=None, pattern="^(IN|OUT)$"),
     currency: str = Query(default="KRW", description="합계는 한 통화만 집계 - 통화 간 합산 금지"),
     include_excluded: bool = False,
     db: Session = Depends(get_db),
@@ -85,6 +88,7 @@ def summarize_transactions(
         merchant=merchant,
         q=q,
         transaction_type=transaction_type,
+        direction=direction,
         currency=currency,
         include_excluded=include_excluded,
     )
@@ -103,9 +107,16 @@ def get_transaction(transaction_id: int, db: Session = Depends(get_db)):
 def update_transaction(
     transaction_id: int, body: TransactionUpdate, db: Session = Depends(get_db)
 ):
-    transaction = transaction_service.update_transaction(
-        db, transaction_id, category_id=body.category_id, memo=body.memo
-    )
+    try:
+        transaction = transaction_service.update_transaction(
+            db,
+            transaction_id,
+            category_id=body.category_id,
+            memo=body.memo,
+            transaction_type=body.transaction_type,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if transaction is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return transaction

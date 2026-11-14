@@ -1,6 +1,8 @@
 from datetime import date, datetime, time
 from decimal import Decimal
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -11,6 +13,7 @@ class TransactionOut(BaseModel):
     transaction_date: date
     transaction_time: time | None
     transaction_type: str
+    direction: str  # IN / OUT
     amount: Decimal
     currency: str
     merchant_raw: str | None
@@ -35,6 +38,8 @@ class TransactionListOut(BaseModel):
 class TransactionUpdate(BaseModel):
     category_id: int | None = None
     memo: str | None = None
+    # 입금은 INCOME <-> TRANSFER, 출금은 EXPENSE <-> TRANSFER 로만 바꿀 수 있다
+    transaction_type: Literal["INCOME", "EXPENSE", "TRANSFER"] | None = None
 
 
 class BreakdownItem(BaseModel):

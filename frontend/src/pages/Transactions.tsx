@@ -324,8 +324,8 @@ export function Transactions() {
           categories={flatCategories}
           cardLabel={selected.card_id ? cardLabelById.get(selected.card_id) ?? '-' : '-'}
           onClose={() => setSelected(null)}
-          onSave={async (catId, memo) => {
-            await endpoints.updateTransaction(selected.id, { category_id: catId, memo })
+          onSave={async (update) => {
+            await endpoints.updateTransaction(selected.id, update)
             list.reload()
           }}
         />
