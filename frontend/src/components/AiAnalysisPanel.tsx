@@ -55,7 +55,10 @@ export function AiAnalysisPanel({ year, month, anomalies, loading }: Props) {
   }
 
   const { overall, categories } = anomalies
-  const topCategories = categories.slice(0, 3)
+  // 진행 중인 달에는 '아직 안 쓴' 카테고리(-100%)가 줄줄이 잡히므로 실제로 쓴 항목만 보여준다
+  const today = new Date()
+  const inProgress = year === today.getFullYear() && month === today.getMonth() + 1
+  const topCategories = categories.filter((c) => !inProgress || Number(c.current_amount) > 0).slice(0, 3)
   const hasBaseline = overall.change_percentage !== null
 
   return (
@@ -68,7 +71,7 @@ export function AiAnalysisPanel({ year, month, anomalies, loading }: Props) {
             이번 달 지출은 <span className="font-semibold">{formatAmount(overall.current_total)}</span>으로, 최근{' '}
             {anomalies.lookback_months}개월 평균보다{' '}
             <span className={overall.change_percentage! >= 0 ? 'font-semibold text-rose-600' : 'font-semibold text-emerald-600'}>
-              {formatPercent(overall.change_percentage)}
+              {Math.abs(overall.change_percentage!).toFixed(1)}%
             </span>{' '}
             {overall.change_percentage! >= 0 ? '많습니다' : '적습니다'}.
           </p>

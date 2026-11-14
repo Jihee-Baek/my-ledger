@@ -31,6 +31,18 @@ export function formatMonthLabel(year: number, month: number): string {
   return `${year}년 ${month}월`
 }
 
+/** 결제수단 표시 이름: 별칭이 있으면 별칭, 없으면 기관명 + 마스킹 번호 */
+export function cardLabel(card: { institution: string; card_number_masked: string | null; card_name?: string | null }): string {
+  return card.card_name || `${card.institution} ${card.card_number_masked ?? ''}`.trim()
+}
+
+/** 금액 글자색: 수입은 초록, 이체는 회색, 지출은 기본 - 모든 표에서 같은 규칙 */
+export function amountColorClass(transactionType: string): string {
+  if (transactionType === 'INCOME') return 'text-emerald-600'
+  if (transactionType === 'TRANSFER') return 'text-gray-400'
+  return 'text-gray-900'
+}
+
 export function formatPercent(value: number | null): string {
   if (value === null) return '-'
   return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`

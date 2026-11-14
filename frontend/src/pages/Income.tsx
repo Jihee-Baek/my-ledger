@@ -7,7 +7,7 @@ import { StatCard } from '../components/StatCard'
 import { TransactionDetailModal, errorDetail } from '../components/TransactionDetailModal'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { categoryNameMap, flattenCategories } from '../lib/categoryTree'
-import { formatAmount, formatDate, isTransfer, monthRange } from '../lib/format'
+import { cardLabel, formatAmount, formatDate, isTransfer, monthRange } from '../lib/format'
 
 const PAGE_SIZE = 50
 
@@ -45,7 +45,7 @@ export function Income() {
   const catNameById = useMemo(() => (categories.data ? categoryNameMap(categories.data) : new Map<number, string>()), [categories.data])
   const cardLabelById = useMemo(() => {
     const map = new Map<number, string>()
-    for (const c of cards.data ?? []) map.set(c.id, `${c.institution} ${c.card_number_masked ?? ''}`.trim())
+    for (const c of cards.data ?? []) map.set(c.id, cardLabel(c))
     return map
   }, [cards.data])
 

@@ -53,6 +53,16 @@ def _category_display_name(category: Category | None) -> str:
     return category.name if category else "미분류"
 
 
+def _root_category_name(categories: dict[int, Category], category_id: int | None) -> str:
+    """하위 카테고리(식비 > 외식)는 상위(식비) 이름으로, 상위 직접 분류·미분류는 그대로."""
+    category = categories.get(category_id) if category_id else None
+    if category is None:
+        return "미분류"
+    if category.parent_id and category.parent_id in categories:
+        return categories[category.parent_id].name
+    return category.name
+
+
 def _trailing_year_months(end_year: int, end_month: int, count: int) -> list[tuple[int, int]]:
     months = []
     y, m = end_year, end_month
@@ -156,12 +166,14 @@ def monthly_summary(db: Session, year: int, month: int, currency: str = "KRW") -
         .group_by(Transaction.category_id)
     ).all()
 
-    category_ids = [r.category_id for r in rows if r.category_id is not None]
-    categories = {c.id: c for c in db.query(Category).filter(Category.id.in_(category_ids)).all()}
+    # 상위 카테고리 단위로 합산 - 거래내역/통계 화면과 같은 기준이어야 1위 항목이 화면마다 달라지지 않는다
+    categories = {c.id: c for c in db.query(Category).all()}
+    buckets: dict[str, Decimal] = defaultdict(Decimal)
+    for category_id, amount in rows:
+        buckets[_root_category_name(categories, category_id)] += amount
 
     top_categories = []
-    for category_id, amount in rows:
-        name = _category_display_name(categories.get(category_id)) if category_id else "미분류"
+    for name, amount in buckets.items():
         pct = float(amount) / float(total_expense) * 100 if total_expense else 0.0
         top_categories.append({"category": name, "amount": amount, "percentage": round(pct, 1)})
     top_categories.sort(key=lambda c: c["amount"], reverse=True)
@@ -465,7 +477,7 @@ def spending_anomalies(
     for by, bm in baseline_months:
         start, end = month_bounds(by, bm)
         for row in category_summary(db, start, end, currency):
-            baseline_category_totals[row["category"]] += row["amount"]
+            baseline_category_totals[row["parent_category"] or row["category"]] += row["amount"]
             baseline_overall_total += row["amount"]
 
     denom = len(baseline_months) or 1
@@ -473,8 +485,12 @@ def spending_anomalies(
     baseline_overall_avg = baseline_overall_total / denom
 
     current_start, current_end = month_bounds(year, month)
+    # 상위 카테고리 단위로 비교 - '식비'로 직접 분류된 거래와 '식비 > 외식'이 따로 집계되면
+    # 식비가 70만 원인 달에 "식비 -100%" 같은 엉뚱한 변동이 나온다
     current_rows = category_summary(db, current_start, current_end, currency)
-    current_by_category = {row["category"]: row["amount"] for row in current_rows}
+    current_by_category: dict[str, Decimal] = defaultdict(Decimal)
+    for row in current_rows:
+        current_by_category[row["parent_category"] or row["category"]] += row["amount"]
     current_overall = sum((row["amount"] for row in current_rows), Decimal(0))
 
     def change_pct(current: Decimal, baseline: Decimal) -> float | None:

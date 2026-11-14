@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { endpoints } from '../api/endpoints'
 import { ApiError } from '../api/client'
 import type { ImportResultOut } from '../api/types'
+import { CardNicknames } from '../components/CardNicknames'
 
 const SOURCE_LABEL: Record<string, string> = {
   samsung_card: '삼성카드',
@@ -132,6 +133,8 @@ export function Import() {
           </div>
         </div>
       )}
+
+      <CardNicknames />
     </div>
   )
 }

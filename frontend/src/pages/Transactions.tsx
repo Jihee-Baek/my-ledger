@@ -8,7 +8,7 @@ import { StatCard } from '../components/StatCard'
 import { TransactionDetailModal } from '../components/TransactionDetailModal'
 import { useApiQuery } from '../hooks/useApiQuery'
 import { categoryNameMap, flattenCategories } from '../lib/categoryTree'
-import { amountSign, formatAmount, formatDate, isTransfer, monthRange } from '../lib/format'
+import { amountColorClass, amountSign, cardLabel, formatAmount, formatDate, isTransfer, monthRange } from '../lib/format'
 
 const PAGE_SIZE = 30
 
@@ -75,7 +75,7 @@ export function Transactions() {
   const catNameById = useMemo(() => (categories.data ? categoryNameMap(categories.data) : new Map()), [categories.data])
   const cardLabelById = useMemo(() => {
     const map = new Map<number, string>()
-    for (const c of cards.data ?? []) map.set(c.id, `${c.institution} ${c.card_number_masked ?? ''}`.trim())
+    for (const c of cards.data ?? []) map.set(c.id, cardLabel(c))
     return map
   }, [cards.data])
 
@@ -148,6 +148,8 @@ export function Transactions() {
   }
 
   const totalPages = list.data ? Math.ceil(list.data.total / PAGE_SIZE) : 0
+  // 카테고리·결제수단·검색·금액으로 좁혔을 때만 '기간 전체 대비 비중'이 의미가 있다 (아니면 항상 100%)
+  const isNarrowed = !!(categoryId || cardId || q || minAmount || maxAmount)
 
   return (
     <div className="flex flex-col gap-4">
@@ -192,7 +194,7 @@ export function Transactions() {
           <select className="rounded-md border border-gray-300 px-2 py-1" value={cardId} onChange={(e) => resetPage(setCardId)(e.target.value)}>
             <option value="">결제수단 전체</option>
             {(cards.data ?? []).map((c) => (
-              <option key={c.id} value={c.id}>{c.institution} {c.card_number_masked}</option>
+              <option key={c.id} value={c.id}>{cardLabel(c)}</option>
             ))}
           </select>
 
@@ -214,29 +216,35 @@ export function Transactions() {
       </div>
 
       {summary.data && (
-        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              label={`지출 합계${selectedCategoryLabel ? ` · ${selectedCategoryLabel}` : ''}`}
-              value={formatAmount(summary.data.total_expense, summary.data.currency)}
-              sub={`${summary.data.expense_count}건 · ${summary.data.currency} 기준`}
-            />
-            <StatCard
-              label="기간 전체 지출 대비"
-              value={summary.data.expense_share_pct === null ? '-' : `${summary.data.expense_share_pct.toFixed(1)}%`}
-              sub={`전체 ${formatAmount(summary.data.period_expense_total, summary.data.currency)} 중`}
-            />
-            <StatCard
-              label="수입 합계"
-              value={formatAmount(summary.data.total_income, summary.data.currency)}
-              tone={Number(summary.data.total_income) > 0 ? 'positive' : 'default'}
-              sub={`${summary.data.income_count}건`}
-            />
-            <StatCard
-              label="이체 (통계 미포함)"
-              value={formatAmount(summary.data.total_transfer, summary.data.currency)}
-              sub={`${summary.data.transfer_count}건`}
-            />
+        <div className="grid items-start gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard
+                label={`지출 합계${selectedCategoryLabel ? ` · ${selectedCategoryLabel}` : ''}`}
+                value={formatAmount(summary.data.total_expense, summary.data.currency)}
+                tone="negative"
+                sub={`${summary.data.expense_count}건 · ${summary.data.currency} 기준`}
+              />
+              <StatCard
+                label="수입 합계"
+                value={formatAmount(summary.data.total_income, summary.data.currency)}
+                tone={Number(summary.data.total_income) > 0 ? 'positive' : 'default'}
+                sub={`${summary.data.income_count}건`}
+              />
+              {isNarrowed && (
+                <StatCard
+                  label="기간 전체 지출 대비"
+                  value={summary.data.expense_share_pct === null ? '-' : `${summary.data.expense_share_pct.toFixed(1)}%`}
+                  sub={`전체 ${formatAmount(summary.data.period_expense_total, summary.data.currency)} 중`}
+                />
+              )}
+            </div>
+            {summary.data.transfer_count > 0 && (
+              <div className="rounded-lg border border-dashed border-gray-200 px-4 py-2 text-xs text-gray-500">
+                이체 {summary.data.transfer_count}건 · {formatAmount(summary.data.total_transfer, summary.data.currency)}
+                <span className="ml-1 text-gray-400">(계좌 간 이동이라 수입·지출 어디에도 포함되지 않음)</span>
+              </div>
+            )}
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-3 flex items-baseline justify-between">
@@ -276,7 +284,7 @@ export function Transactions() {
                   {tx.is_excluded && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600">통계 제외</span>}
                   {isTransfer(tx.transaction_type) && <span className="ml-2 rounded bg-sky-50 px-1.5 py-0.5 text-xs text-sky-600">이체</span>}
                 </td>
-                <td className={`px-4 py-2 text-right tabular-nums ${isTransfer(tx.transaction_type) ? 'text-gray-400' : ''}`}>
+                <td className={`px-4 py-2 text-right tabular-nums ${amountColorClass(tx.transaction_type)}`}>
                   {amountSign(tx.transaction_type)}
                   {formatAmount(tx.amount, tx.currency)}
                 </td>

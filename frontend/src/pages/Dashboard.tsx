@@ -31,11 +31,21 @@ export function Dashboard() {
   const anomalies = useApiQuery(() => endpoints.anomalies(year, month), [year, month])
 
   const loading = summary.loading || !summary.data
+  // 진행 중인 달은 전월(한 달 전체)과 비교하면 당연히 작게 나오므로 비교 대신 집계 기준일을 보여준다
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
+  const expenseSub = (() => {
+    if (isCurrentMonth) return `${month}월 ${today.getDate()}일까지 집계 · 전월 비교는 월말에`
+    if (prevSummary.loading || !prevSummary.data || !summary.data) return undefined
+    const prevExpense = toNumber(prevSummary.data.total_expense)
+    const curExpense = toNumber(summary.data.total_expense)
+    const pct = prevExpense ? ((curExpense - prevExpense) / prevExpense) * 100 : null
+    return `전월 대비 ${formatPercent(pct)}`
+  })()
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <h1 className="text-xl font-semibold">홈</h1>
         <MonthNav year={year} month={month} onChange={(y, m) => { setYear(y); setMonth(m) }} />
       </div>
 
@@ -45,26 +55,13 @@ export function Dashboard() {
         <>
           <div className="grid grid-cols-4 gap-4">
             <StatCard label="총수입" value={formatAmount(summary.data.total_income)} />
-            <StatCard label="총지출" value={formatAmount(summary.data.total_expense)} tone="negative" />
+            <StatCard label="총지출" value={formatAmount(summary.data.total_expense)} tone="negative" sub={expenseSub} />
             <StatCard
               label="순수입"
               value={formatAmount(summary.data.net)}
               tone={toNumber(summary.data.net) >= 0 ? 'positive' : 'negative'}
             />
-            <StatCard
-              label="거래 건수"
-              value={`${recent.data?.total ?? '-'}건`}
-              sub={
-                !prevSummary.loading && prevSummary.data
-                  ? (() => {
-                      const prevExpense = toNumber(prevSummary.data!.total_expense)
-                      const curExpense = toNumber(summary.data!.total_expense)
-                      const pct = prevExpense ? ((curExpense - prevExpense) / prevExpense) * 100 : null
-                      return `전월 대비 지출 ${formatPercent(pct)}`
-                    })()
-                  : undefined
-              }
-            />
+            <StatCard label="거래 건수" value={`${recent.data?.total ?? '-'}건`} sub="수입·지출·이체 포함" />
           </div>
 
           {summary.data.other_currencies.length > 0 && (
@@ -83,7 +80,7 @@ export function Dashboard() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700">카테고리별 지출</h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-700">카테고리별 지출 <span className="font-normal text-gray-400">(상위 분류 기준)</span></h2>
               <CategoryBarList items={summary.data.top_categories} />
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4">

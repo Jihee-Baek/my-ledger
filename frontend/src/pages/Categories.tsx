@@ -18,6 +18,14 @@ export function Categories() {
   const [newCategoryId, setNewCategoryId] = useState('')
   const [newPriority, setNewPriority] = useState('10')
   const [adding, setAdding] = useState(false)
+  const [ruleQuery, setRuleQuery] = useState('')
+  const visibleRules = useMemo(() => {
+    const q = ruleQuery.trim().toLowerCase()
+    if (!q) return rules.data ?? []
+    return (rules.data ?? []).filter(
+      (r) => r.keyword.toLowerCase().includes(q) || (categoryLabelById.get(r.category_id) ?? '').toLowerCase().includes(q),
+    )
+  }, [rules.data, ruleQuery, categoryLabelById])
 
   const addRule = async () => {
     if (!newKeyword.trim() || !newCategoryId) return
@@ -68,7 +76,18 @@ export function Categories() {
       </div>
 
       <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">자동 분류 Rule</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-gray-700">
+            자동 분류 Rule <span className="font-normal text-gray-400">{rules.data ? `${visibleRules.length} / ${rules.data.length}개` : ''}</span>
+          </h2>
+          <input
+            type="text"
+            placeholder="🔍 키워드·카테고리 검색"
+            className="w-60 rounded-md border border-gray-300 px-3 py-1 text-sm"
+            value={ruleQuery}
+            onChange={(e) => setRuleQuery(e.target.value)}
+          />
+        </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md bg-gray-50 p-3 text-sm">
           <input
@@ -116,7 +135,7 @@ export function Categories() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rules.data?.map((rule) => (
+            {visibleRules.map((rule) => (
               <tr key={rule.id} className={!rule.enabled ? 'opacity-40' : ''}>
                 <td className="py-2 pr-4 font-medium text-gray-800">{rule.keyword}</td>
                 <td className="py-2 pr-4 text-gray-600">{categoryLabelById.get(rule.category_id) ?? rule.category_id}</td>
@@ -132,6 +151,11 @@ export function Categories() {
                 </td>
               </tr>
             ))}
+            {rules.data && visibleRules.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-6 text-center text-gray-400">검색어에 맞는 규칙이 없습니다.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

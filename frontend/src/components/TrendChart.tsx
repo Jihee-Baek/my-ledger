@@ -24,7 +24,7 @@ export function TrendChart({ items }: { items: MonthlyTrendItem[] }) {
           formatter={(value) => Number(Array.isArray(value) ? value[0] : value).toLocaleString('ko-KR') + '원'}
           contentStyle={{ fontSize: 12, borderRadius: 8 }}
         />
-        <Bar dataKey="expense" name="지출" fill="#111827" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="expense" name="지출" fill="#111827" radius={[4, 4, 0, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>
   )
